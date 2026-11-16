@@ -1,21 +1,37 @@
-"""ai-excited-01 entry: "The Matchbox Phoenix".
+"""Board-game stampede: three beasts break out at once.
 
-Copies the entry image (entry.png, sitting beside this script) to
-/output/entry.png. Deterministic: stdlib only, no network, no randomness,
-no timestamps in the output.
+A charging rhino, a tall giraffe and a leaping boar tumble out of a
+board game on a dark table while the guests around it flinch and step
+back. This script drops the entry picture at /output/entry.png.
 """
 
-import shutil
-from pathlib import Path
-
-SCRIPT_DIR = Path(__file__).resolve().parent
+import hashlib
+import pathlib
 
 
-def main() -> None:
-    src = SCRIPT_DIR / "entry.png"
-    out_dir = Path("/output")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(src, out_dir / "entry.png")
+def fingerprint(path):
+    """Hex SHA-256 of a file, hashed a chunk at a time."""
+    hasher = hashlib.sha256()
+    with path.open("rb") as stream:
+        while True:
+            piece = stream.read(65536)
+            if not piece:
+                break
+            hasher.update(piece)
+    return hasher.hexdigest()
+
+
+def main():
+    folder = pathlib.Path(__file__).resolve().parent
+    picture = folder / "entry.png"
+    target_dir = pathlib.Path("/output")
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target = target_dir / "entry.png"
+    with picture.open("rb") as incoming, target.open("wb") as outgoing:
+        for piece in iter(lambda: incoming.read(65536), b""):
+            outgoing.write(piece)
+    if fingerprint(picture) != fingerprint(target):
+        raise SystemExit("entry.png copy is not identical to the source")
 
 
 if __name__ == "__main__":
